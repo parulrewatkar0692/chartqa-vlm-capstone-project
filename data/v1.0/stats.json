@@ -1,0 +1,69 @@
+{
+  "version": "1.0",
+  "image_source": "huggingface.co/datasets/ahmed-masry/ChartQA @ af8b6f5c08c95085271561c2a3f9d15f2b5a9031, ChartQA Dataset.zip <split>/png/<chart_id>.png",
+  "splits": {
+    "train": {
+      "items": 1449,
+      "unique_charts": 1137,
+      "answer_type": {
+        "yes_no": 96,
+        "text": 309,
+        "number": 972,
+        "unanswerable": 72
+      },
+      "unanswerable_image_differs_from_question_chart": 72,
+      "image_width_min_median_max": [
+        184,
+        800,
+        1315
+      ],
+      "image_height_min_median_max": [
+        248,
+        557,
+        1388
+      ]
+    },
+    "val": {
+      "items": 170,
+      "unique_charts": 142,
+      "answer_type": {
+        "text": 44,
+        "number": 111,
+        "unanswerable": 8,
+        "yes_no": 7
+      },
+      "unanswerable_image_differs_from_question_chart": 8,
+      "image_width_min_median_max": [
+        308,
+        800,
+        858
+      ],
+      "image_height_min_median_max": [
+        321,
+        557,
+        956
+      ]
+    },
+    "test": {
+      "items": 180,
+      "unique_charts": 157,
+      "answer_type": {
+        "number": 118,
+        "text": 42,
+        "unanswerable": 9,
+        "yes_no": 11
+      },
+      "unanswerable_image_differs_from_question_chart": 9,
+      "image_width_min_median_max": [
+        200,
+        800,
+        858
+      ],
+      "image_height_min_median_max": [
+        306,
+        557,
+        1094
+      ]
+    }
+  }
+}
