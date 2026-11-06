@@ -16,7 +16,7 @@ Dataset **ChartAudit v1.0**: ChartQA human-written questions selected and strati
 | `scripts/check_teacher.py` | Checks that an evidence string points at a real cell, colour or title of the chart; used to verify the teacher targets and to score grounding in the notebook |
 | `notebooks/01_vlm_baselines.ipynb` | Colab: zero/few-shot baseline of a 4-bit VLM on the test split |
 
-Splits: **1,449 train / 167 val / 180 test** (test held out; never train or tune on it). Chart overlap between splits is 0. Check the files with `cd data/v1.0 && sha256sum -c MANIFEST.txt`.
+Splits: **1,403 train / 167 val / 180 test** (test held out; never train or tune on it). Chart overlap between splits is 0. Check the files with `cd data/v1.0 && sha256sum -c MANIFEST.txt`.
 
 ## One record (`image_only`)
 
@@ -37,9 +37,18 @@ Splits: **1,449 train / 167 val / 180 test** (test held out; never train or tune
 - Evidence strings name table cells (`Row=Cocaine, Col=Maximum price (133)`), colours (`Colour: Maximum price = dark blue`) or the title, which for a chart image means category, series, colour and title.
 - Unanswerable items (5%) show the chart `chart_id` with a question written for another chart (`question_source_chart`).
 
-## Image check (val)
+## Image check (train and val)
 
-Claude Opus also looked at every val chart image and answered two questions per item: can it be answered from the image alone, and does the gold match what the image shows? Of 170 val items, 3 were removed: 2 with an ambiguous gold and 1 "unanswerable" item whose question (a sum of the largest and smallest value) works on any chart. The result is stored per item as `flags.image_readable`: `yes` (152, values printed or unambiguous), `approx` (8, needs an estimate from the axis), or `no` (7, the unanswerable items). Train has not had this check yet.
+Claude Opus also looked at every train and val chart image and answered two questions per item: can it be answered from the image alone, and does the gold match what the image shows? Items where the gold was wrong or ambiguous, and "unanswerable" items the image can actually answer, were removed.
+
+| | Checked | Gold wrong | Gold ambiguous | Refusal not valid | Kept |
+|---|---:|---:|---:|---:|---:|
+| Train | 1,449 | 20 | 17 | 9 | 1,403 |
+| Val | 170 | 0 | 2 | 1 | 167 |
+
+Most wrong golds (15 of 20) are a scale mistake: the chart prints a percentage such as 64% or "11 points", and the gold is the fraction 0.64 or 0.11. The test split was not checked and probably has the same pattern, so look at percentage items when you read test errors.
+
+The result is stored per item as `flags.image_readable`: `yes` (values printed or unambiguous), `approx` (needs an estimate from the axis; 20 train, 8 val) or `no` (the unanswerable items).
 
 ## Caveats for the image-only setting
 
