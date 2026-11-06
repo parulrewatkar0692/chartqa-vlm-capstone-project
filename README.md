@@ -16,7 +16,7 @@ Dataset **ChartAudit v1.0**: ChartQA human-written questions selected and strati
 | `scripts/check_teacher.py` | Checks that an evidence string points at a real cell, colour or title of the chart; used to verify the teacher targets and to score grounding in the notebook |
 | `notebooks/01_vlm_baselines.ipynb` | Colab: zero/few-shot baseline of a 4-bit VLM on the test split |
 
-Splits: **1,449 train / 170 val / 180 test** (test held out; never train or tune on it). Chart overlap between splits is 0. Check the files with `cd data/v1.0 && sha256sum -c MANIFEST.txt`.
+Splits: **1,449 train / 167 val / 180 test** (test held out; never train or tune on it). Chart overlap between splits is 0. Check the files with `cd data/v1.0 && sha256sum -c MANIFEST.txt`.
 
 ## One record (`image_only`)
 
@@ -36,6 +36,10 @@ Splits: **1,449 train / 170 val / 180 test** (test held out; never train or tune
 - Metadata: `source`, `chart_type`, `answer_type`, `question_type`, `domain_tags`, `flags`, `target_status`, ... `input_text` is the chart's data as text; in `image_only` the model never sees it, it is only used to check the evidence.
 - Evidence strings name table cells (`Row=Cocaine, Col=Maximum price (133)`), colours (`Colour: Maximum price = dark blue`) or the title, which for a chart image means category, series, colour and title.
 - Unanswerable items (5%) show the chart `chart_id` with a question written for another chart (`question_source_chart`).
+
+## Image check (val)
+
+Claude Opus also looked at every val chart image and answered two questions per item: can it be answered from the image alone, and does the gold match what the image shows? Of 170 val items, 3 were removed: 2 with an ambiguous gold and 1 "unanswerable" item whose question (a sum of the largest and smallest value) works on any chart. The result is stored per item as `flags.image_readable`: `yes` (152, values printed or unambiguous), `approx` (8, needs an estimate from the axis), or `no` (7, the unanswerable items). Train has not had this check yet.
 
 ## Caveats for the image-only setting
 
