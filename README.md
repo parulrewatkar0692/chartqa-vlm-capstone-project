@@ -2,6 +2,8 @@
 
 IIITK Exec PG GenAI capstone: QLoRA fine-tuning of a ≤8B **vision-language** model (Qwen2.5-VL-7B / Qwen2-VL-7B) on ChartQA human-written questions, with grounded JSON answers.
 
+New here? Start with the [beginner's guide](docs/BEGINNER_GUIDE.md): the flow step by step, every folder and file, an example item and a glossary.
+
 Dataset **ChartAudit v1.0**: ChartQA human-written questions selected and stratified for the project. Each item has the chart image, the question and an answer target with evidence and a short rationale, written by Claude Opus as teacher and checked by `scripts/check_teacher.py`.
 
 ## Layout
