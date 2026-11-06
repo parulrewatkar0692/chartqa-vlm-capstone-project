@@ -1,150 +1,178 @@
-# Beginner's guide to the ChartAudit dataset
+# A beginner's guide to the chartqa-vlm-capstone-project repo
 
-This guide explains what this dataset is, how it was made, what every folder and file holds, what one item looks like, and what the technical words mean. You don't need machine-learning experience to follow it.
+Repo: https://github.com/parulrewatkar0692/chartqa-vlm-capstone-project
 
-## 1. The idea in one minute
+## 1. What this project is
 
-We want to teach an AI model that can look at pictures (a *vision-language model*, or VLM) to answer questions about charts, like this one:
+We want to teach an AI model to answer questions about charts, such as "What is the value of the dark blue bar in 2019?" or "What is the average of the USA and France bars?".
+
+You teach a model the way you teach a student: you show it many worked examples, each a question with the correct answer and a short explanation. This is called **fine-tuning**. This repo holds those worked examples (the **dataset**), the chart pictures they refer to, and a notebook that tests a model *before* any teaching, to give a starting score (the **baseline**).
+
+The model we use is a **vision-language model (VLM)**: it can look at a picture, not only read text. So each example shows the model the chart *image* together with the question, and the model has to read the chart itself. For an easier version, each example can also include the chart's data as text.
+
+Here is one chart from the dataset:
 
 ![A bar chart of World Cup prize money](../data/v1.0/images/train/two_col_315.png)
 
-> **Question:** In the 1990s, what is the average prize money (in millions) in the USA and France?
-> **Answer:** 87, because USA 1994 = 71, France 1998 = 103, and (71 + 103) / 2 = 87.
+The question for this chart is "In the 1990s, what is the average prize money (in millions) in the USA and France?". The right answer is 87, because 1994 (USA) is 71, 1998 (France) is 103, and (71 + 103) / 2 = 87.
 
-To teach the model, we need many examples of *question + chart → good answer*. This dataset is that collection of examples: **1,403 for training, 167 for validation and 180 for the final test**, each with its chart picture.
+## 2. The flow, step by step
 
-A good answer here isn't just a number. The model is taught to reply in a fixed JSON shape: the answer, which parts of the chart it used (*evidence*), and a one-sentence *rationale*. That makes answers easy to check and harder to fake.
+Think of it as a kitchen: raw ingredients come in, get cleaned and sorted, are checked by a head chef, and only the good plates go out.
 
-## 2. How the dataset was made, step by step
+**Step 1. Raw ingredients: the ChartQA dataset.**
+ChartQA is a public research dataset of about 21,000 charts, each with questions written by people. Each chart comes with its picture, its data table and a description file (title, chart type, colours). The full download is large (about 875 MB), so this repo keeps only the pictures it uses (about 70 MB).
 
-| Step | What happened | Why |
-|---|---|---|
-| 1. Start from ChartQA | We began with the public ChartQA dataset (charts from Statista, Pew Research, Our World in Data and OECD) and kept only the questions that people wrote by hand. | Human questions are more natural than machine-made ones. |
-| 2. Select a balanced sample | We picked about 1,800 questions, spread evenly over source, chart type (bar, line, pie), answer type and question type. About 5% are deliberately unanswerable (step 3). We kept ChartQA's own split so no chart appears in both training and test. | A balanced sample stops the model from only learning the most common case. |
-| 3. Add "cannot answer" items | For some items we paired a question with the wrong chart. The correct reply is `null` plus a short refusal. | The model must learn to say "this chart doesn't show that" instead of guessing. |
-| 4. Write the target answers | Each chart's data was turned into a text table. Claude Opus acted as a *teacher*: it read the table and the question and wrote the evidence and the rationale. A script then checked that the teacher's answer matched ChartQA's answer and that every piece of evidence points at something real in the chart data. | A checked teacher gives much better targets than raw answers alone. |
-| 5. Remove disputed items | When the teacher thought ChartQA's own answer was wrong, the item was dropped and replaced by another from the same group. About 12% of answers were disputed. | Wrong answers would teach the model wrong things. |
-| 6. Attach the chart picture | Each item now points to its chart image (a PNG file). The user message is *image + question*. | This is what makes it a VLM dataset. |
-| 7. Image check | Claude Opus then looked at every train and val **picture** and answered two questions: can this be answered from the picture alone, and does the stored answer match what the picture shows? | Step 4 used a text table, not the picture, so this catches mistakes only visible in the image. It removed 46 train and 3 val items (mostly percentages stored as fractions, such as 0.64 for "64%"). |
-| 8. Freeze (still to do) | Two people check 150 items by hand, then the dataset is tagged as frozen. | Human confirmation before we report any results. |
+**Step 2. Keep only human-written questions.**
+ChartQA also has machine-generated questions, which are easier and repetitive. We keep only the human-written ones (about 9,600).
 
-The scripts that did steps 2 to 5 are not in this repo, only their results. The checker used in steps 4 and 7 is `scripts/check_teacher.py`.
+**Step 3. Turn each chart's data into text.**
+For every chart we write out its source, chart type, title, which colour belongs to which series (for example "Male = dark blue"), and the data table. This text is used by the teacher in step 7 and to check its work in step 8. In the easier `image_table` version, the model sees it too.
 
-## 3. What every folder and file holds
+**Step 4. Throw out questions that can't be answered from that text.**
+Some questions ask about things the data doesn't show, such as gridlines, fonts or dotted lines. Some refer to a colour that doesn't exist in that chart. Some have an answer that doesn't appear in the data. All of these are removed.
+
+**Step 5. Keep the business, economy and health topics.**
+A keyword filter keeps charts about money, the economy, health and business, to match the project's theme.
+
+**Step 6. Split into three sets.**
+- **Train** (1,403 examples): the examples the model learns from.
+- **Validation** (167): used during training to check progress and pick the best version.
+- **Test** (180): locked away and used only once, for the final score. The model never sees these while learning, like an exam paper kept sealed.
+
+No chart appears in more than one set, so the model can't simply memorise a chart and recognise it in the exam. The sets are also balanced, so each one has a similar mix of sources (Statista, Pew, Our World in Data, OECD), chart types (bar, line, pie) and question types (look-up, arithmetic, colour-based).
+
+About 5% of the questions are deliberately impossible: a question paired with the wrong chart. The correct answer is "I can't answer this from the chart". This teaches the model to admit when it doesn't know instead of guessing.
+
+**Step 7. Add "show your working" with a teacher model.**
+The original dataset gives only the final answer. A large AI model, **Claude Opus**, acted as the teacher. For each training example it was shown the chart's data text, the question and the correct answer, and it wrote:
+- **evidence**: exactly which cells of the table (or which colour, or the title) the answer comes from;
+- **rationale**: one or two sentences of reasoning, e.g. "(71 + 103) / 2 = 87".
+
+The teacher was never allowed to change the answer.
+
+**Step 8. Check the teacher's work automatically.**
+A checking script (`scripts/check_teacher.py`) confirms that every piece of evidence really exists in the chart data, that the answer matches the original, and that the format is correct. When the teacher said "this original answer is wrong", which happened for about 10% of examples (mostly charts with messy tables), the example was removed and replaced with a similar one that passed every check.
+
+**Step 9. Attach the chart picture.**
+Each example now points to its chart image (a PNG file). The question the model receives is *the picture plus the question*.
+
+**Step 10. Check every picture with the teacher.**
+Steps 7 and 8 used the data text, not the picture. So Claude Opus then looked at every train and validation **picture** and answered two things: can this be answered from the picture alone, and does the stored answer match what the picture shows? This removed 46 training and 3 validation examples. Most (16 of the 20 wrong answers) were percentages stored as fractions, like 0.64 for a chart that shows 64%. Each remaining example is marked `yes` (values clearly printed), `approx` (you must estimate from the axis) or `no` (the correct answer is "can't answer") in `flags.image_readable`. The test set was not checked this way.
+
+**Step 11. Human spot-check (still to do).**
+Two team members independently review 150 random training examples and mark whether each is correct. Their agreement is measured. This is the final quality check.
+
+**Step 12. Freeze.**
+After the human check, the dataset is "frozen" (tagged `v1.0-frozen` in the repo). From then on nobody changes it, so every experiment uses the same data and the results can be compared fairly.
+
+**Step 13. Baseline test.**
+The notebook runs a ready-made vision model (for example Qwen2.5-VL-7B) on the 180 test questions *before* any fine-tuning and scores it. Later, the fine-tuned model is scored the same way to show how much it improved.
+
+## 3. What each folder and file contains
 
 ```
-.
-├── README.md                        Short overview and one example record
+chartqa-vlm-capstone-project/
+├── README.md                  ← start here: short overview and one example record
 ├── docs/
-│   └── BEGINNER_GUIDE.md           This guide
-├── data/v1.0/
-│   ├── image_only/                  Main setting: chart image + question
-│   │   ├── train.jsonl              1,403 items to learn from
-│   │   ├── val.jsonl                167 items to pick the best model/settings
-│   │   ├── test.jsonl               180 items, locked: never train or tune on them
-│   │   └── answer_only/             Same items, but the target is only the answer
-│   ├── image_table/                 Easier setting: image + the chart data as text + question
-│   │   ├── train.jsonl, val.jsonl, test.jsonl
-│   │   └── answer_only/
-│   ├── images/{train,val,test}/     The chart pictures, one PNG per chart (1,104 + 140 + 157)
-│   ├── stats.json                   Counts per split, picture sizes, image-check results
-│   ├── teacher_stats.json           How many items the teacher accepted, rejected, replaced
-│   └── MANIFEST.txt                 A fingerprint (SHA-256) of every file, to detect changes
+│   └── BEGINNER_GUIDE.md      ← this guide
+├── data/
+│   └── v1.0/                  ← ★ THE DATASET ★
+│       ├── image_only/        ← main setting: chart picture + question
+│       │   ├── train.jsonl    ← 1,403 training examples with evidence and reasoning
+│       │   ├── val.jsonl      ← 167 validation examples
+│       │   ├── test.jsonl     ← 180 sealed exam questions (never train on these)
+│       │   └── answer_only/   ← same examples without the reasoning, for a comparison experiment
+│       ├── image_table/       ← easier setting: picture + the chart's data as text + question
+│       │   ├── train.jsonl, val.jsonl, test.jsonl
+│       │   └── answer_only/
+│       ├── images/            ← the chart pictures, one PNG per chart
+│       │   ├── train/         ← 1,104 pictures
+│       │   ├── val/           ← 140 pictures
+│       │   └── test/          ← 157 pictures
+│       ├── stats.json         ← counts per set, picture sizes, results of the picture check
+│       ├── teacher_stats.json ← how many examples the teacher accepted, rejected and replaced
+│       └── MANIFEST.txt       ← fingerprints (checksums) of each file, to prove nothing changed
 ├── scripts/
-│   └── check_teacher.py            Checks that evidence points at real cells, colours or titles
+│   └── check_teacher.py       ← the automatic checker from step 8
 └── notebooks/
-    └── 01_vlm_baselines.ipynb      Colab notebook: how well does an untrained VLM do on test?
+    └── 01_vlm_baselines.ipynb ← Google Colab notebook: runs a ready-made vision model on the test set and scores it
 ```
 
-**Pick the right files:**
-- To train, use `image_only/train.jsonl` (or `image_table/train.jsonl` if you want the easier version).
-- To choose between versions of your model, use `val.jsonl`.
-- To report a final score, use `test.jsonl`, once, at the end.
-- `answer_only/` is for an experiment: train one model on full targets and one on answer-only, then compare. If the full-target model scores higher, teaching it to show evidence and reasoning helped.
+**About `.jsonl` files:** each line is one example, written in JSON (a simple "label: value" text format). You can open them in any text editor.
 
-Each `.jsonl` file holds one item per line, and each line is one JSON object.
+**About `.py` files:** `check_teacher.py` is a Python script. You don't need it to *use* the dataset, only to re-check evidence.
 
-## 4. One item, field by field
+**Which files to pick:** train on `image_only/train.jsonl` (or `image_table/train.jsonl` for the easier version). Pictures are not inside the `.jsonl` files; each line has an `image` field with the picture's path, relative to `data/v1.0/`.
 
-This is the item behind the chart above, from `data/v1.0/image_only/train.jsonl` (shortened).
+## 4. What one example looks like
 
-```json
-{
-  "id": "train-two_col_315-3611",
-  "split": "train",
-  "chart_id": "two_col_315",
-  "image": "images/train/two_col_315.png",
-  "source": "statista",
-  "chart_type": "v_bar",
-  "question": "In the 1990s, what is the average prize money (in millions) in the USA and France?",
-  "answer": 87,
-  "answer_type": "number",
-  "question_type": "arithmetic_comparison",
-  "target_status": "teacher_verified",
-  "flags": {"image_readable": "yes", "...": "..."},
-  "input_text": "Source: Statista\nChart type: vertical bar\n...| 1998 (France) | 103.0 |\n| 1994 (USA) | 71.0 | ...",
-  "messages": [
-    {"role": "system",    "content": "You are a chart analyst. Answer questions about the chart image provided. ..."},
-    {"role": "user",      "content": [{"type": "image", "image": "images/train/two_col_315.png"},
-                                      {"type": "text",  "text": "Question: In the 1990s, ... Respond with JSON: {...}"}]},
-    {"role": "assistant", "content": "{\"answer\": 87, \"answer_type\": \"number\", \"unit\": \"million U.S. dollars\", \"evidence\": [\"Row=1994 (USA), Col=Prize money in million U.S. dollars (71.0)\", \"Row=1998 (France), Col=Prize money in million U.S. dollars (103.0)\"], \"rationale\": \"USA 1994 was 71 and France 1998 was 103; (71 + 103) / 2 = 87.\"}"}
-  ]
-}
-```
+Each line in `image_only/train.jsonl` is a short conversation in three parts. This is the example for the chart above:
 
-| Field | Meaning |
+1. **System**: the standing instruction. "You are a chart analyst. Answer questions about the chart image provided. Return only valid JSON…"
+2. **User**: the chart picture plus the question:
+   ```
+   [image: images/train/two_col_315.png]
+   Question: In the 1990s, what is the average prize money (in millions) in the USA and France?
+   Respond with JSON: {"answer": ..., "answer_type": ..., "unit": ..., "evidence": [...], "rationale": ...}
+   ```
+3. **Assistant**: the model answer we want it to learn:
+   ```json
+   {"answer": 87, "answer_type": "number", "unit": "million U.S. dollars",
+    "evidence": ["Row=1994 (USA), Col=Prize money in million U.S. dollars (71.0)",
+                 "Row=1998 (France), Col=Prize money in million U.S. dollars (103.0)"],
+    "rationale": "USA 1994 was 71 and France 1998 was 103; (71 + 103) / 2 = 87."}
+   ```
+
+Read `Row=1994 (USA), Col=Prize money… (71.0)` as "the bar labelled 1994 (USA), in the Prize money series, whose value is 71.0". Other evidence forms are `Colour: Maximum price = dark blue` and `Title`.
+
+Each line also carries labels that are not shown to the model, which we use to break down scores:
+
+| Label | Example | Meaning |
+|---|---|---|
+| `id`, `chart_id` | `train-two_col_315-3611` | The example's unique name, and which chart it is about |
+| `source` | `statista` | Where the chart came from: `statista`, `pew`, `owid`, `oecd` |
+| `chart_type` | `v_bar` | `v_bar` vertical bars, `h_bar` horizontal bars, `line`, `pie` |
+| `answer_type` | `number` | `number`, `text`, `yes_no`, `unanswerable` |
+| `question_type` | `arithmetic_comparison` | `retrieval` (read one value), `arithmetic_comparison`, `visual_reference` (colours, shapes) |
+| `target_status` | `teacher_verified` | `teacher_verified`, or `fixed_refusal` for the can't-answer examples |
+| `flags.image_readable` | `yes` | Result of the picture check (step 10) |
+| `input_text` | `Source: Statista ...` | The chart's data as text, kept so evidence can be checked |
+
+A can't-answer example looks the same, but its picture belongs to a different chart than the question was written for, and the answer the model should give is `{"answer": null, "answer_type": "unanswerable", ...}`.
+
+## 5. How to use it
+
+- **To fine-tune:** train on `data/v1.0/image_only/train.jsonl`, check progress on `val.jsonl`, and report the final score on `test.jsonl` only once.
+- **To compare with and without reasoning:** train one model on the full examples and one on `answer_only/`. If the first scores higher, teaching the model to show evidence and reasoning helped.
+- **To get the baseline score:** open `notebooks/01_vlm_baselines.ipynb` in Google Colab, choose an L4 or A100 GPU and follow the notes at the top of the notebook.
+- **To understand the numbers:** read `data/v1.0/stats.json` and `teacher_stats.json`.
+
+## 6. Still to do
+
+- Human review of 150 training examples by two people, then tag the repo `v1.0-frozen`.
+- Run the baseline notebook for each base model and record the scores.
+- Check the 180 test answers against their pictures too. The test set was not part of step 10 and probably has a few percentages stored as fractions, so look at percentage questions first when reading test errors.
+- Write the fine-tuning notebook.
+
+## 7. Small glossary
+
+| Term | Meaning |
 |---|---|
-| `id` | Unique name of this item. |
-| `split` | `train`, `val` or `test`. |
-| `chart_id`, `image` | Which chart this item shows, and where its picture is (path relative to `data/v1.0/`). |
-| `source` | Where the chart came from: `statista`, `pew`, `owid` or `oecd`. |
-| `chart_type` | `v_bar` (vertical bars), `h_bar` (horizontal bars), `line` or `pie`. |
-| `question`, `answer` | The human question and the correct answer. |
-| `answer_type` | `number`, `text`, `yes_no` or `unanswerable`. |
-| `question_type` | `retrieval` (read one value), `arithmetic_comparison` (compute or compare), `visual_reference` (refer to colours or shapes), or `unanswerable`. |
-| `target_status` | `teacher_verified` (the teacher wrote and a script checked the target) or `fixed_refusal` (a standard "cannot answer" reply). |
-| `flags.image_readable` | From the image check: `yes` (values are printed or obvious), `approx` (you must estimate from the axis), `no` (the question can't be answered from this picture, which is correct for `unanswerable` items). |
-| `input_text` | The chart's data as plain text. The model does not see it in `image_only`; it is kept so evidence can be checked. |
-| `messages` | The training conversation: instructions (`system`), the question with the picture (`user`), and the reply the model should learn to give (`assistant`). |
-
-In `image_table`, the `user` message also carries the `Chart data:` text before the question. In `answer_only`, the reply has `"evidence": []` and `"rationale": null`.
-
-**Reading the evidence strings.** `Row=1994 (USA), Col=Prize money... (71.0)` means "the row labelled 1994 (USA), the column Prize money, which holds 71.0". Other forms are `Colour: Maximum price = dark blue` (a legend colour) and `Title` (the chart title). For a picture, think of rows as the labelled bars or points, and columns as the series in the legend.
-
-**An "unanswerable" item** looks the same, except the picture belongs to a different chart than the question was written for, and the reply is `{"answer": null, "answer_type": "unanswerable", ...}`.
-
-## 5. What to do next
-
-1. **Run the baseline notebook** on a GPU (L4 or A100). It shows how well an untrained model does on `test`, so later you can show how much fine-tuning improved it.
-2. **Human audit** of 150 train items by two people, then freeze the dataset.
-3. **Fine-tune** with QLoRA on `train`, choose settings on `val`, and score once on `test`.
-
-## 6. Glossary
-
-| Word | Plain meaning |
-|---|---|
-| **ChartQA** | A public dataset of charts with questions and answers, the raw material here. |
-| **VLM (vision-language model)** | An AI model that takes both pictures and text as input, such as Qwen2.5-VL. |
-| **Fine-tuning** | Continuing a model's training on your own examples so it gets better at your task. |
-| **QLoRA / LoRA** | A cheap way to fine-tune: the big model stays frozen (and compressed to 4-bit in QLoRA) and only small add-on layers are trained. It fits on a single GPU. |
-| **Instruction–response pair** | One training example: what the user asks, and the reply we want. Each item here is one. |
-| **Train / validation / test** | Train: examples the model learns from. Validation: examples used to compare versions of your model. Test: a locked exam used once for the final score. |
-| **Baseline** | The score of the untrained model, to compare against after fine-tuning. |
-| **Teacher model** | A strong model (here Claude Opus) that writes the target answers for a smaller model to learn from. |
-| **Gold answer** | The human-written correct answer from ChartQA. |
-| **Evidence** | The specific cells, colours or title the answer is based on. |
-| **Rationale** | A short sentence explaining how the answer follows from the evidence. |
-| **Grounded** | An answer that can be traced back to something actually in the chart. |
-| **Unanswerable item** | A question the chart cannot answer; the right reply is `null`. |
-| **Relaxed accuracy** | The score used for ChartQA: a numeric answer counts as correct if it is within 5% of the gold; text and yes/no must match after ignoring case and punctuation. |
-| **JSON** | A text format for structured data, like `{"answer": 87}`. |
-| **JSONL** | A file with one JSON object per line. |
-| **Schema** | The agreed shape of the model's JSON reply (which fields it must have). |
-| **Chat template** | The way a model expects system, user and assistant messages to be written out before training. |
-| **Chart type codes** | `v_bar` vertical bar, `h_bar` horizontal bar, `line`, `pie`. |
-| **Percent vs fraction mistake** | A gold answer stored as 0.64 when the chart shows 64%. Removed from train and val; test may still contain a few. |
-| **SHA-256 / MANIFEST** | A file fingerprint. If a file changes, its fingerprint changes, so `MANIFEST.txt` proves nothing was altered. |
-| **Frozen dataset** | A version nobody edits any more, so every experiment uses identical data. |
-| **PNG** | The image file format used for the charts. |
-| **Colab** | Google's free online notebook with GPUs, where the baseline notebook runs. |
-| **GPL-3.0** | The licence of ChartQA; this derived dataset carries the same licence. |
+| Dataset | The collection of worked examples the model learns from |
+| VLM (vision-language model) | An AI model that reads pictures as well as text, e.g. Qwen2.5-VL |
+| Fine-tuning | Teaching an existing model with your own examples |
+| QLoRA | A cheap way to fine-tune: the big model stays frozen and compressed, and only small add-on layers are trained, so it fits on one GPU |
+| Base model | The ready-made model before fine-tuning |
+| Baseline | The base model's score before fine-tuning: the "before" photo |
+| Train / validation / test | Learn from / check progress on / final sealed exam |
+| Gold answer | The correct answer from the original dataset |
+| Teacher model | A bigger AI (Claude Opus) that wrote the explanations |
+| Evidence | The exact cells, colours or title an answer is based on ("grounding") |
+| Rationale | A one- or two-sentence explanation of how the answer was reached |
+| Unanswerable example | A question the chart can't answer; the right reply is `null` |
+| Stratified | Each set keeps the same mix of chart and question types |
+| Relaxed accuracy | A number counts as correct if it's within 5% of the gold answer |
+| JSON / JSONL | A text format for structured data / a file with one JSON example per line |
+| Percent vs fraction mistake | A gold answer stored as 0.64 when the chart shows 64% |
+| Freeze | Lock the dataset so nobody changes it during experiments |
