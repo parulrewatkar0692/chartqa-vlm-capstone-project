@@ -46,7 +46,7 @@ Claude Opus also looked at every train and val chart image and answered two ques
 | Train | 1,449 | 20 | 17 | 9 | 1,403 |
 | Val | 170 | 0 | 2 | 1 | 167 |
 
-Most wrong golds (15 of 20) are a scale mistake: the chart prints a percentage such as 64% or "11 points", and the gold is the fraction 0.64 or 0.11. The test split was not checked and probably has the same pattern, so look at percentage items when you read test errors.
+Most wrong golds (16 of 20) are a scale mistake: the chart prints a percentage such as 64% or "11 points", and the gold is the fraction 0.64 or 0.11. The test split was not checked and probably has the same pattern, so look at percentage items when you read test errors.
 
 The result is stored per item as `flags.image_readable`: `yes` (values printed or unambiguous), `approx` (needs an estimate from the axis; 20 train, 8 val) or `no` (the unanswerable items).
 
