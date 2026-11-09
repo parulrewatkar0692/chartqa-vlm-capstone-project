@@ -12,6 +12,8 @@ chart-disjoint):
   4. Stratified random sample (seed fixed) over source x chart type x answer type x
      question type, plus ~5% "unanswerable" items (a question paired with an unrelated chart).
   5. Copy the chart PNGs and write <out>/<split>.jsonl with the human answer as gold.
+  Also writes all_domains_catalogue.jsonl: every question that passes step 2, in ALL domains,
+  with its domain tags and no labels, and per-domain counts in stats.json ("all_domains").
      No evidence or rationale is written here; those come from blind labelling.
 
 Usage:
@@ -23,6 +25,18 @@ import chartqa_rules as R
 
 TARGET = {"train": (1100, 55), "val": (130, 7), "test": (171, 9)}   # (answerable, unanswerable)
 KEEP_DOMAINS = {"finance", "economy"}
+
+
+def primary_domain(tags):
+    """One label per question for counting: finance/economy first, then health, business, other."""
+    t = set(tags)
+    if t & KEEP_DOMAINS:
+        return "finance_economy"
+    if "health" in t:
+        return "health"
+    if "business" in t:
+        return "business"
+    return "other"
 
 
 def main():
@@ -47,6 +61,7 @@ def main():
     later = {"train": {"val", "test"}, "val": {"test"}, "test": set()}
 
     stats = {"seed": a.seed, "keep_domains": sorted(KEEP_DOMAINS), "splits": {}}
+    catalogue = []   # every question that passes the structural checks, all domains, no labels
     for split, (n_ans, n_unans) in TARGET.items():
         reasons, seen, pool, charts = collections.Counter(), set(), [], {}
         block = {h for (s, _), h in table_hash.items() if s in later[split]}
@@ -86,6 +101,12 @@ def main():
                 reasons[why] += 1; continue
             it["flags"], it["question_type"] = flags, flags["question_type"]
             it["domain_tags"] = R.domain_tags(header, body, q, ann)
+            catalogue.append({"id": it["id"], "split": split, "chart_id": name, "source": it["source"],
+                              "chart_type": it["chart_type"], "question": q, "gold_answer_raw": x["label"],
+                              "answer_type": atype, "question_type": flags["question_type"],
+                              "domain_tags": it["domain_tags"],
+                              "domain": primary_domain(it["domain_tags"]),
+                              "in_finance_economy": bool(KEEP_DOMAINS & set(it["domain_tags"]))})
             if not KEEP_DOMAINS & set(it["domain_tags"]):
                 reasons["not_finance_or_economy"] += 1; continue
             pool.append(it)
@@ -130,6 +151,15 @@ def main():
             "by_question_type": dict(collections.Counter(r["question_type"] for r in recs)),
             "by_source": dict(collections.Counter(r["source"] for r in recs)),
         }
+    with open(os.path.join(a.out, "all_domains_catalogue.jsonl"), "w", encoding="utf-8") as f:
+        for c in catalogue:
+            f.write(json.dumps(c, ensure_ascii=False) + "\n")
+    stats["all_domains"] = {
+        s: {"questions_after_structural_checks": sum(c["split"] == s for c in catalogue),
+            "by_domain": dict(collections.Counter(c["domain"] for c in catalogue if c["split"] == s).most_common()),
+            "by_tag_any": dict(collections.Counter(t for c in catalogue if c["split"] == s
+                                                   for t in (c["domain_tags"] or ["none"])).most_common())}
+        for s in TARGET}
     ids = {s: {json.loads(l)["chart_id"] for l in open(os.path.join(a.out, f"{s}.jsonl"))} for s in TARGET}
     stats["chart_overlap"] = {"train_val": len(ids["train"] & ids["val"]), "train_test": len(ids["train"] & ids["test"]),
                               "val_test": len(ids["val"] & ids["test"])}

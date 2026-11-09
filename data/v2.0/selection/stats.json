@@ -122,6 +122,56 @@
       }
     }
   },
+  "all_domains": {
+    "train": {
+      "questions_after_structural_checks": 6595,
+      "by_domain": {
+        "other": 3608,
+        "finance_economy": 2306,
+        "health": 433,
+        "business": 248
+      },
+      "by_tag_any": {
+        "none": 3608,
+        "finance": 1423,
+        "economy": 1213,
+        "business": 865,
+        "health": 553
+      }
+    },
+    "val": {
+      "questions_after_structural_checks": 868,
+      "by_domain": {
+        "other": 458,
+        "finance_economy": 309,
+        "health": 78,
+        "business": 23
+      },
+      "by_tag_any": {
+        "none": 458,
+        "finance": 187,
+        "economy": 170,
+        "business": 104,
+        "health": 103
+      }
+    },
+    "test": {
+      "questions_after_structural_checks": 1152,
+      "by_domain": {
+        "other": 620,
+        "finance_economy": 398,
+        "health": 88,
+        "business": 46
+      },
+      "by_tag_any": {
+        "none": 620,
+        "finance": 239,
+        "economy": 213,
+        "business": 147,
+        "health": 112
+      }
+    }
+  },
   "chart_overlap": {
     "train_val": 0,
     "train_test": 0,

@@ -30,6 +30,20 @@ The splits share 0 charts.
 
 All packs, keys, labels and comparisons are in `blind_labelling/runs/`. The 40-item pilot (`pilot40`, from an earlier selection) matched on 39 of 40.
 
+## All domains (counts only, not labelled)
+
+`selection/all_domains_catalogue.jsonl` lists every human-written question that passes the structural checks, **in all domains**, with its `domain_tags`, a single `domain` (`finance_economy`, `health`, `business`, `other`) and `in_finance_economy`. It has no labels and is not used for training or testing. It exists so anyone can see how ChartQA splits by topic and filter on `domain` later.
+
+| Domain (one per question) | train | val | test |
+|---|---|---|---|
+| finance_economy | 2,306 | 309 | 398 |
+| health | 433 | 78 | 88 |
+| business | 248 | 23 | 46 |
+| other (no keyword match) | 3,608 | 458 | 620 |
+| **total** | **6,595** | **868** | **1,152** |
+
+Tags overlap (a chart can be both finance and economy), so the per-tag counts are larger. In train: finance 1,423, economy 1,213, business 865, health 553. Precedence for the single `domain` is finance/economy, then health, then business.
+
 ## Files
 
 | Path | What |
