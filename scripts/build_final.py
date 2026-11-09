@@ -87,7 +87,7 @@ def main():
     a = ap.parse_args()
     stats, manifest = {"version": "2.0", "splits": {}}, {}
     for split in ("train", "val", "test"):
-        sel = [json.loads(l) for l in open(os.path.join(a.selection, f"{split}.jsonl"))]
+        sel = [json.loads(l) for l in open(os.path.join(a.selection, f"{split}.jsonl"), encoding="utf-8")]
         keep, dropped, st = [], [], collections.Counter()
         if split == "test":
             for r in sel:
@@ -96,13 +96,13 @@ def main():
                 keep.append((r, tgt, None, None))
         else:
             run = os.path.join(a.runs, f"v2_{split}")
-            key = {k["pack_id"]: k["id"] for k in map(json.loads, open(os.path.join(run, "key", "answers.jsonl")))}
+            key = {k["pack_id"]: k["id"] for k in map(json.loads, open(os.path.join(run, "key", "answers.jsonl"), encoding="utf-8"))}
             labs = {}
             for f in sorted(os.listdir(os.path.join(run, "outputs"))):
-                for l in open(os.path.join(run, "outputs", f)):
+                for l in open(os.path.join(run, "outputs", f), encoding="utf-8"):
                     if l.strip():
                         x = json.loads(l); labs[key[x["pack_id"]]] = x
-            comp = {c["id"]: c for c in map(json.loads, open(os.path.join(run, "compare.jsonl")))}
+            comp = {c["id"]: c for c in map(json.loads, open(os.path.join(run, "compare.jsonl"), encoding="utf-8"))}
             for r in sel:
                 c, lab = comp.get(r["id"]), labs.get(r["id"])
                 if c is None or lab is None:
@@ -126,20 +126,20 @@ def main():
             for sub in ("", "answer_only"):
                 d = os.path.join(a.out, variant, sub); os.makedirs(d, exist_ok=True)
                 p = os.path.join(d, f"{split}.jsonl")
-                with open(p, "w", encoding="utf-8") as f:
+                with open(p, "w", encoding="utf-8", newline="\n") as f:
                     for r, tgt, conf, g in keep:
                         t = {"answer_type": tgt["answer_type"], "unit": tgt["unit"], "answer": tgt["answer"]} if sub else tgt
                         f.write(json.dumps(record(r, t, variant, conf, g, short=bool(sub)), ensure_ascii=False) + "\n")
                 manifest[os.path.relpath(p, a.out)] = sha(p)
         if dropped:
-            with open(os.path.join(a.out, f"dropped_{split}.jsonl"), "w") as f:
+            with open(os.path.join(a.out, f"dropped_{split}.jsonl"), "w", encoding="utf-8", newline="\n") as f:
                 for x in dropped:
                     f.write(json.dumps(x, ensure_ascii=False) + "\n")
         stats["splits"][split] = {"selected": len(sel), "kept": len(keep), "dropped": len(dropped), **st,
                                   "by_answer_type": dict(collections.Counter(r["answer_type"] for r, *_ in keep)),
                                   "by_question_type": dict(collections.Counter(r["question_type"] for r, *_ in keep))}
-    json.dump(stats, open(os.path.join(a.out, "stats.json"), "w"), indent=2)
-    with open(os.path.join(a.out, "MANIFEST.txt"), "w") as f:
+    json.dump(stats, open(os.path.join(a.out, "stats.json"), "w", encoding="utf-8", newline="\n"), indent=2)
+    with open(os.path.join(a.out, "MANIFEST.txt"), "w", encoding="utf-8", newline="\n") as f:
         for k, v in sorted(manifest.items()):
             f.write(f"{v}  {k}\n")
     print(json.dumps(stats, indent=2))

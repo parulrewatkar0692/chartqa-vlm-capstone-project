@@ -15,7 +15,7 @@ ap.add_argument("--seed", type=int, default=7)
 ap.add_argument("--batch", type=int, default=0)   # also split questions into batches of this size
 a = ap.parse_args()
 
-rows = [json.loads(l) for l in open(a.data)]
+rows = [json.loads(l) for l in open(a.data, encoding="utf-8")]
 doms = set(a.domains.split(",")) if a.domains else None
 if doms:
     rows = [r for r in rows if doms & set(r["domain_tags"]) or r["answer_type"] == "unanswerable"]  # refusals carry no domain tag
@@ -33,7 +33,7 @@ if a.n:
 out = pathlib.Path(a.out)
 (out / "packs" / "images").mkdir(parents=True, exist_ok=True)
 (out / "key").mkdir(parents=True, exist_ok=True)
-with open(out / "packs" / "questions.jsonl", "w") as fp, open(out / "key" / "answers.jsonl", "w") as fk:
+with open(out / "packs" / "questions.jsonl", "w", encoding="utf-8", newline="\n") as fp, open(out / "key" / "answers.jsonl", "w", encoding="utf-8", newline="\n") as fk:
     for i, r in enumerate(rows, 1):
         pid = f"q{i:04d}"
         img = f"images/{pid}.png"
@@ -44,8 +44,8 @@ with open(out / "packs" / "questions.jsonl", "w") as fp, open(out / "key" / "ans
                              "domain_tags": r["domain_tags"], "question_type": r["question_type"],
                              "image_readable": r["flags"].get("image_readable")}) + "\n")
 if a.batch:
-    qs = open(out / "packs" / "questions.jsonl").read().splitlines()
+    qs = open(out / "packs" / "questions.jsonl", encoding="utf-8").read().splitlines()
     (out / "packs" / "batches").mkdir(exist_ok=True)
     for j in range(0, len(qs), a.batch):
-        (out / "packs" / "batches" / f"b{j // a.batch:02d}.jsonl").write_text("\n".join(qs[j:j + a.batch]) + "\n")
+        (out / "packs" / "batches" / f"b{j // a.batch:02d}.jsonl").write_bytes(("\n".join(qs[j:j + a.batch]) + "\n").encode("utf-8"))
 print(f"wrote {len(rows)} packs to {out}")

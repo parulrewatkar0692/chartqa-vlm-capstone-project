@@ -7,8 +7,8 @@ Final confidence:
 """
 import json, sys, re, pathlib, collections
 out = pathlib.Path(sys.argv[1])
-key = {k["pack_id"]: k for k in map(json.loads, open(out / "key" / "answers.jsonl"))}
-labs = [json.loads(l) for f in sorted((out / "outputs").glob("*.jsonl")) for l in open(f) if l.strip()]
+key = {k["pack_id"]: k for k in map(json.loads, open(out / "key" / "answers.jsonl", encoding="utf-8"))}
+labs = [json.loads(l) for f in sorted((out / "outputs").glob("*.jsonl")) for l in open(f, encoding="utf-8") if l.strip()]
 missing = sorted(set(key) - {l["pack_id"] for l in labs})
 if missing: print(f"WARNING: {len(missing)} packs have no label yet, e.g. {missing[:5]}")
 
@@ -46,7 +46,7 @@ for l in labs:
     rows.append({"pack_id": l["pack_id"], "id": k["id"], "gold": g, "blind": b, "unit": l.get("unit"),
                  "match": m, "labeller_conf": l.get("confidence"), "final_conf": conf,
                  "question_type": k["question_type"], "rationale": l.get("rationale")})
-with open(out / "compare.jsonl", "w") as f:
+with open(out / "compare.jsonl", "w", encoding="utf-8", newline="\n") as f:
     for r in rows: f.write(json.dumps(r) + "\n")
 n = len(rows)
 print(f"items {n} | exact {stats['exact']} | close {stats['close']} | miss {stats['miss']} | key order ok {stats['key_order_ok']}/{n}")

@@ -140,7 +140,7 @@ def main():
                 "chart_data_table": charts[chart][3],
             })
         rng.shuffle(recs)
-        with open(os.path.join(a.out, f"{split}.jsonl"), "w", encoding="utf-8") as f:
+        with open(os.path.join(a.out, f"{split}.jsonl"), "w", encoding="utf-8", newline="\n") as f:
             for r in recs:
                 f.write(json.dumps(r, ensure_ascii=False) + "\n")
         stats["splits"][split] = {
@@ -151,7 +151,7 @@ def main():
             "by_question_type": dict(collections.Counter(r["question_type"] for r in recs)),
             "by_source": dict(collections.Counter(r["source"] for r in recs)),
         }
-    with open(os.path.join(a.out, "all_domains_catalogue.jsonl"), "w", encoding="utf-8") as f:
+    with open(os.path.join(a.out, "all_domains_catalogue.jsonl"), "w", encoding="utf-8", newline="\n") as f:
         for c in catalogue:
             f.write(json.dumps(c, ensure_ascii=False) + "\n")
     stats["all_domains"] = {
@@ -160,13 +160,13 @@ def main():
             "by_tag_any": dict(collections.Counter(t for c in catalogue if c["split"] == s
                                                    for t in (c["domain_tags"] or ["none"])).most_common())}
         for s in TARGET}
-    ids = {s: {json.loads(l)["chart_id"] for l in open(os.path.join(a.out, f"{s}.jsonl"))} for s in TARGET}
+    ids = {s: {json.loads(l)["chart_id"] for l in open(os.path.join(a.out, f"{s}.jsonl"), encoding="utf-8")} for s in TARGET}
     stats["chart_overlap"] = {"train_val": len(ids["train"] & ids["val"]), "train_test": len(ids["train"] & ids["test"]),
                               "val_test": len(ids["val"] & ids["test"])}
     for s in TARGET:
         manifest[f"out {s}.jsonl"] = R.sha256(os.path.join(a.out, f"{s}.jsonl"))
-    json.dump(stats, open(os.path.join(a.out, "stats.json"), "w"), indent=2)
-    with open(os.path.join(a.out, "MANIFEST.txt"), "w") as f:
+    json.dump(stats, open(os.path.join(a.out, "stats.json"), "w", encoding="utf-8", newline="\n"), indent=2)
+    with open(os.path.join(a.out, "MANIFEST.txt"), "w", encoding="utf-8", newline="\n") as f:
         for k, v in manifest.items():
             f.write(f"{v}  {k}\n")
     print(json.dumps(stats, indent=2))

@@ -2,8 +2,8 @@
 or if a pack's text contains its own gold answer outside the question."""
 import json, sys, pathlib
 out = pathlib.Path(sys.argv[1])
-packs = [json.loads(l) for l in open(out / "packs" / "questions.jsonl")]
-key = {k["pack_id"]: k for k in map(json.loads, open(out / "key" / "answers.jsonl"))}
+packs = [json.loads(l) for l in open(out / "packs" / "questions.jsonl", encoding="utf-8")]
+key = {k["pack_id"]: k for k in map(json.loads, open(out / "key" / "answers.jsonl", encoding="utf-8"))}
 bad = 0
 for p in packs:
     if set(p) != {"pack_id", "image", "question"}:
@@ -13,7 +13,7 @@ for p in packs:
 files = sorted(f.name for f in (out / "packs").rglob("*") if f.is_file())
 batches = sorted((out / "packs" / "batches").glob("*.jsonl")) if (out / "packs" / "batches").exists() else []
 for b in batches:
-    for l in open(b):
+    for l in open(b, encoding="utf-8"):
         q = json.loads(l)
         if set(q) != {"pack_id", "image", "question"}:
             print("EXTRA FIELDS IN BATCH", b.name, q.get("pack_id")); bad += 1
