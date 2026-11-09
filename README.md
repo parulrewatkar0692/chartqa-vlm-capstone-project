@@ -2,6 +2,12 @@
 
 IIITK Exec PG GenAI capstone: QLoRA fine-tuning of a ≤8B **vision-language** model (Qwen2.5-VL-7B / Qwen2-VL-7B) on ChartQA human-written questions, with grounded JSON answers.
 
+## Current dataset: ChartAudit-Fin v2.0 (use this one)
+
+`data/v2.0/` holds **finance and economics** questions picked from the raw ChartQA files by written rules, with labels made **blind**: the labeller saw only the chart image and the question, never the answer. **1,070 train / 126 val / 180 test.** How it was built, the checks and the limits: [data/v2.0/README.md](data/v2.0/README.md). The labelling records (question packs, answer keys, labels, comparisons) are in `blind_labelling/`. The baseline notebook now reads v2.0 by default.
+
+`data/v1.0/` below is the earlier version, kept for reference.
+
 New here? Start with the [beginner's guide](docs/BEGINNER_GUIDE.md): the flow step by step, every folder and file, an example item and a glossary.
 
 Dataset **ChartAudit v1.0**: ChartQA human-written questions selected and stratified for the project. Each item has the chart image, the question and an answer target with evidence and a short rationale, written by Claude Opus as teacher and checked by `scripts/check_teacher.py`.
