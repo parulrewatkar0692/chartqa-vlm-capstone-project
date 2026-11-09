@@ -78,6 +78,10 @@ Disagreements are mostly arithmetic questions (53 of 85 in train). Common causes
 - colour names (navy versus dark blue);
 - mistakes by either side.
 
+### Second model (GPT) cross-check
+
+On a random sample of 30 train items, GPT (free ChatGPT and Microsoft Copilot web apps, same prompt, answers never shown) matched the human answer on 29 of 30. Claude matched on the same 29 and both missed the same ambiguous item, which was already dropped. Details: `blind_labelling/runs/gpt_check/RESULTS.md`.
+
 ## Limits
 
 - The labeller ran in a shared workspace, so isolation rests on the packs, the leak check and the saved prompt, not a sandbox. The packs and outputs are kept so anyone can rerun the labelling with another model.
