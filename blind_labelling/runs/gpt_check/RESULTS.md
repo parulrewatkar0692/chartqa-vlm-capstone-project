@@ -12,4 +12,4 @@
 
 The first labeller (Claude Sonnet) also matched on 29 of these 30 and missed the same item, g006 ("How many years have the same value for both investment and development?", human answer 2, both models said 0). That item was already dropped from the training set as low confidence.
 
-So two different model families, labelling blind and independently, agree with the human answers on the same 29 items, and the only disagreement is a question where the human answer is doubtful.
+So two different model families, labelling blind and independently, agree with the human answers on the same 29 items, and the only disagreement is an ambiguous chart: in 2007 and 2008 the two lines almost touch and the Development values are not printed, so "the same value" cannot be confirmed from the image.
