@@ -1,5 +1,7 @@
 # ChartAudit-Fin v2.0
 
+**Made by:** Parul Khatri
+
 Finance and economics chart questions from ChartQA for fine-tuning a vision-language model. All labels were written **blind**: the labeller never saw the correct answers.
 
 | Split | Selected | Kept | Dropped (blind answer disagreed) |
