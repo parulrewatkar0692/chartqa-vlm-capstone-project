@@ -4,7 +4,7 @@ IIITK Exec PG GenAI capstone: QLoRA fine-tuning of a ≤8B **vision-language** m
 
 ## Current dataset: ChartAudit-Fin v2.0 (use this one)
 
-`data/v2.0/` holds **finance and economics** questions picked from the raw ChartQA files by written rules, with labels made **blind**: the labeller saw only the chart image and the question, never the answer. **1,070 train / 126 val / 180 test.** How it was built, the checks and the limits: [data/v2.0/README.md](data/v2.0/README.md). The labelling records (question packs, answer keys, labels, comparisons) are in `blind_labelling/`. The baseline notebook now reads v2.0 by default.
+`data/v2.0/` holds **finance and economics** questions picked from the raw ChartQA files by written rules, with labels made **blind**: the labeller saw only the chart image and the question, never the answer. **1,033 train / 124 val / 180 test** (kept only where the blind answer exactly matched the human answer). How it was built, the checks and the limits: [data/v2.0/README.md](data/v2.0/README.md). The labelling records (question packs, answer keys, labels, comparisons) are in `blind_labelling/`. The baseline notebook now reads v2.0 by default.
 
 `data/v1.0/` below is the earlier version, kept for reference.
 
